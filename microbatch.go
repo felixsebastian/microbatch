@@ -1,35 +1,35 @@
-// Package microbatch is a simple library for micro-batching events.
+// Package microbatch is a simple library for micro-batching jobs.
 package microbatch
 
 import (
 	"sync"
 )
 
-type eventQueue[E any] struct {
-	slice []E
+type jobQueue[J any] struct {
+	slice []J
 	mu    sync.Mutex
 }
 
-// MicroBatcher is the object that manages microbatching of an event stream.
-type MicroBatcher[E any, R any] struct {
-	config     Config[E, R]
-	eventQueue eventQueue[E]
+// MicroBatcher is the object that manages microbatching of an job stream.
+type MicroBatcher[J any, R any] struct {
+	config     Config[J, R]
+	jobQueue   jobQueue[J]
 	stopChan   chan bool
 	resultChan chan R
 	batchWg    sync.WaitGroup
 }
 
-// Start will create a MicroBatcher and start listening for events.
-func Start[E any, R any](config Config[E, R]) *MicroBatcher[E, R] {
+// Start will create a MicroBatcher and start listening for jobs.
+func Start[J any, R any](config Config[J, R]) *MicroBatcher[J, R] {
 	return StartWithTicker(config, nil)
 }
 
 // StartWithTicker allows the caller to provide a Ticker for controlling time.
 // Useful for testing.
-func StartWithTicker[E any, R any](config Config[E, R], ticker Ticker) *MicroBatcher[E, R] {
-	mb := &MicroBatcher[E, R]{
+func StartWithTicker[J any, R any](config Config[J, R], ticker Ticker) *MicroBatcher[J, R] {
+	mb := &MicroBatcher[J, R]{
 		config:     config,
-		eventQueue: eventQueue[E]{},
+		jobQueue:   jobQueue[J]{},
 		stopChan:   make(chan bool),
 		resultChan: make(chan R),
 	}
@@ -42,12 +42,12 @@ func StartWithTicker[E any, R any](config Config[E, R], ticker Ticker) *MicroBat
 	return mb
 }
 
-// RecordEvent will submit a new event to be batched.
-func (mb *MicroBatcher[E, R]) RecordEvent(event E) {
-	mb.eventQueue.mu.Lock()
-	defer mb.eventQueue.mu.Unlock()
-	mb.eventQueue.slice = append(mb.eventQueue.slice, event)
-	maxReached := len(mb.eventQueue.slice) >= mb.config.MaxSize
+// SubmitJob will submit a new job to be batched.
+func (mb *MicroBatcher[J, R]) SubmitJob(job J) {
+	mb.jobQueue.mu.Lock()
+	defer mb.jobQueue.mu.Unlock()
+	mb.jobQueue.slice = append(mb.jobQueue.slice, job)
+	maxReached := len(mb.jobQueue.slice) >= mb.config.MaxSize
 
 	if maxReached {
 		mb.send(false)
@@ -56,19 +56,19 @@ func (mb *MicroBatcher[E, R]) RecordEvent(event E) {
 
 // WaitForResults should be called to send results to the ResultHandler.
 // This will block until Stop() is called.
-func (mb *MicroBatcher[E, R]) WaitForResults() {
+func (mb *MicroBatcher[J, R]) WaitForResults() {
 	for result := range mb.resultChan {
 		mb.config.ResultHandler.Run(result)
 	}
 }
 
-// Stop will trigger the stop sequence and stop listening for new events. Once
+// Stop will trigger the stop sequence and stop listening for new jobs. Once
 // this is complete, WaitForResults() will unblock.
-func (mb *MicroBatcher[E, R]) Stop() {
+func (mb *MicroBatcher[J, R]) Stop() {
 	mb.stopChan <- true // stop the timer
 }
 
-func (mb *MicroBatcher[E, R]) listen(ticker Ticker) {
+func (mb *MicroBatcher[J, R]) listen(ticker Ticker) {
 	tickerChannel := ticker.Start(mb.config.Frequency)
 
 	go func() {
@@ -78,7 +78,7 @@ func (mb *MicroBatcher[E, R]) listen(ticker Ticker) {
 				mb.send(true)
 			case <-mb.stopChan:
 				ticker.Stop()        // stop the timer
-				mb.send(true)        // send remaining events
+				mb.send(true)        // send remaining jobs
 				mb.batchWg.Wait()    // wait before closing the results channel
 				close(mb.resultChan) // this will unblock WaitForResults()
 				close(mb.stopChan)   // no longer needed
@@ -88,19 +88,19 @@ func (mb *MicroBatcher[E, R]) listen(ticker Ticker) {
 	}()
 }
 
-// will send all events currently in the queue to the batch processor.
-func (mb *MicroBatcher[E, R]) send(lock bool) {
+// will send all jobs currently in the queue to the batch processor.
+func (mb *MicroBatcher[J, R]) send(lock bool) {
 	if lock {
-		mb.eventQueue.mu.Lock()
-		defer mb.eventQueue.mu.Unlock()
+		mb.jobQueue.mu.Lock()
+		defer mb.jobQueue.mu.Unlock()
 	}
 
-	if len(mb.eventQueue.slice) == 0 {
+	if len(mb.jobQueue.slice) == 0 {
 		return
 	}
 
-	batch := mb.eventQueue.slice
-	mb.eventQueue.slice = make([]E, 0)
+	batch := mb.jobQueue.slice
+	mb.jobQueue.slice = make([]J, 0)
 	mb.batchWg.Add(1)
 
 	go func() {

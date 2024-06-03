@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func waitForJobsToRun[E any, R any](mb *MicroBatcher[E, R]) {
+func waitForJobsToRun[J any, R any](mb *MicroBatcher[J, R]) {
 	// We need to stop because this is the last opportunity before blocking
 	// indefinitely.
 	mb.Stop()
@@ -27,9 +27,9 @@ func TestSimpleBatch(t *testing.T) {
 
 	simpleTicker := NewSimpleTicker()
 	mb := StartWithTicker(config, simpleTicker)
-	mb.RecordEvent(0)
-	mb.RecordEvent(1)
-	mb.RecordEvent(2)
+	mb.SubmitJob(0)
+	mb.SubmitJob(1)
+	mb.SubmitJob(2)
 	simpleTicker.Tick()
 	waitForJobsToRun(mb)
 
@@ -55,14 +55,14 @@ func TestTimeCycles(t *testing.T) {
 
 	simpleTicker := NewSimpleTicker()
 	mb := StartWithTicker(config, simpleTicker)
-	mb.RecordEvent(0)
-	mb.RecordEvent(1)
-	mb.RecordEvent(2)
+	mb.SubmitJob(0)
+	mb.SubmitJob(1)
+	mb.SubmitJob(2)
 	simpleTicker.Tick()
 	simpleTicker.Tick() // should not trigger an additional batch
-	mb.RecordEvent(0)
-	mb.RecordEvent(1)
-	mb.RecordEvent(2)
+	mb.SubmitJob(0)
+	mb.SubmitJob(1)
+	mb.SubmitJob(2)
 	simpleTicker.Tick()
 	waitForJobsToRun(mb)
 
@@ -84,16 +84,16 @@ func TestMaxSize(t *testing.T) {
 
 	simpleTicker := NewSimpleTicker()
 	mb := StartWithTicker(config, simpleTicker)
-	mb.RecordEvent(0)
-	mb.RecordEvent(1)
-	mb.RecordEvent(2)
-	mb.RecordEvent(3)
-	mb.RecordEvent(4)
-	mb.RecordEvent(5)
-	mb.RecordEvent(6)
+	mb.SubmitJob(0)
+	mb.SubmitJob(1)
+	mb.SubmitJob(2)
+	mb.SubmitJob(3)
+	mb.SubmitJob(4)
+	mb.SubmitJob(5)
+	mb.SubmitJob(6)
 	waitForJobsToRun(mb)
 
 	if len(fakeBatchProcessor.calls) != 3 {
-		t.Fatalf("Should have hit the maxSize limit twice and batched the remaining event")
+		t.Fatalf("Should have hit the maxSize limit twice and batched the remaining job")
 	}
 }

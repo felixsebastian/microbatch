@@ -12,7 +12,7 @@ func scheduleLetterEvent(mb *microbatch.MicroBatcher[LetterEvent, TotalResult], 
 
 	go func() {
 		<-timer.C
-		mb.RecordEvent(LetterEvent{letter: letter})
+		mb.SubmitJob(LetterEvent{letter: letter})
 		fmt.Printf("Letter event emmited '%s'\n", letter)
 	}()
 }
