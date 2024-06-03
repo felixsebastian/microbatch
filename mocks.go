@@ -13,13 +13,7 @@ func (fbp *FakeBatchProcessor) TellJobToFinish(batchId int) {
 	fbp.chans[batchId] <- true
 }
 
-func (fbp *FakeBatchProcessor) Run(jobs []Job, batchId int) JobResult {
-	batch := make([]int, 0)
-
-	for _, j := range jobs {
-		batch = append(batch, j.(int))
-	}
-
+func (fbp *FakeBatchProcessor) Run(batch []int, batchId int) string {
 	fbp.calls = append(fbp.calls, batch)
 	return "some result"
 }
@@ -30,6 +24,6 @@ func NewFakeResultsHandler() *FakeResultsHandler {
 	return &FakeResultsHandler{calls: make([]string, 0)}
 }
 
-func (frh *FakeResultsHandler) Run(jobResult JobResult, jobId int) {
-	frh.calls = append(frh.calls, jobResult.(string))
+func (frh *FakeResultsHandler) Run(result string, jobId int) {
+	frh.calls = append(frh.calls, result)
 }

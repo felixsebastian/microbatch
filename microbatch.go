@@ -5,40 +5,40 @@ import (
 	"sync"
 )
 
-type jobQueue struct {
-	jobs []Job
+type jobQueue[J any] struct {
+	jobs []J
 	mu   sync.Mutex
 }
 
-type batchResult struct {
+type batchResult[JR any] struct {
 	batchId   int
-	jobResult JobResult
+	jobResult JR
 }
 
 // MicroBatcher is the object that manages microbatching of an event stream.
-type MicroBatcher struct {
-	config      Config
-	jobQueue    jobQueue
+type MicroBatcher[J any, JR any] struct {
+	config      Config[J, JR]
+	jobQueue    jobQueue[J]
 	stopChan    chan bool
-	resultsChan chan batchResult
+	resultsChan chan batchResult[JR]
 	lastBatchId int
 	sendMu      sync.Mutex
 	wg          sync.WaitGroup
 }
 
 // Start will create a MicroBatcher and start listening for events.
-func Start(config Config) *MicroBatcher {
+func Start[J any, JR any](config Config[J, JR]) *MicroBatcher[J, JR] {
 	return StartWithTicker(config, nil)
 }
 
 // StartWithTicker allows the caller to provide a Ticker for controlling time.
 // Useful for testing.
-func StartWithTicker(config Config, ticker Ticker) *MicroBatcher {
-	mb := &MicroBatcher{
+func StartWithTicker[J any, JR any](config Config[J, JR], ticker Ticker) *MicroBatcher[J, JR] {
+	mb := &MicroBatcher[J, JR]{
 		config:      config,
-		jobQueue:    jobQueue{},
+		jobQueue:    jobQueue[J]{},
 		stopChan:    make(chan bool),
-		resultsChan: make(chan batchResult),
+		resultsChan: make(chan batchResult[JR]),
 	}
 
 	if ticker == nil {
@@ -50,7 +50,7 @@ func StartWithTicker(config Config, ticker Ticker) *MicroBatcher {
 }
 
 // SubmitJob should be called to submit new Job objects to be batched.
-func (mb *MicroBatcher) SubmitJob(job Job) error {
+func (mb *MicroBatcher[J, JR]) SubmitJob(job J) error {
 	mb.jobQueue.mu.Lock()
 	defer mb.jobQueue.mu.Unlock()
 	mb.jobQueue.jobs = append(mb.jobQueue.jobs, job)
@@ -64,19 +64,19 @@ func (mb *MicroBatcher) SubmitJob(job Job) error {
 
 // WaitForResults should be called to send results to the JobResultHandler.
 // This will block until Stop() is called.
-func (mb *MicroBatcher) WaitForResults() {
+func (mb *MicroBatcher[J, JR]) WaitForResults() {
 	for batchResult := range mb.resultsChan {
 		mb.config.JobResultHandler.Run(batchResult.jobResult, batchResult.batchId)
 	}
 }
 
 // Stop can be called if we want to stop listening for events.
-func (mb *MicroBatcher) Stop() {
+func (mb *MicroBatcher[J, JR]) Stop() {
 	mb.stopChan <- true // stop the timer
 
 }
 
-func (mb *MicroBatcher) listen(ticker Ticker) {
+func (mb *MicroBatcher[J, JR]) listen(ticker Ticker) {
 	tickerChannel := ticker.Start(mb.config.BatchFrequency)
 
 	go func() {
@@ -97,7 +97,7 @@ func (mb *MicroBatcher) listen(ticker Ticker) {
 }
 
 // will send all jobs currently in the queue to the batch processor.
-func (mb *MicroBatcher) send() {
+func (mb *MicroBatcher[J, JR]) send() {
 	mb.sendMu.Lock()
 	defer mb.sendMu.Unlock()
 
@@ -106,7 +106,7 @@ func (mb *MicroBatcher) send() {
 	}
 
 	batch := mb.jobQueue.jobs
-	mb.jobQueue.jobs = make([]Job, 0)
+	mb.jobQueue.jobs = make([]J, 0)
 	newBatchId := mb.lastBatchId + 1
 	mb.lastBatchId = newBatchId
 	mb.wg.Add(1)
@@ -114,6 +114,6 @@ func (mb *MicroBatcher) send() {
 	go func() {
 		defer mb.wg.Done()
 		jobResult := mb.config.BatchProcessor.Run(batch, newBatchId)
-		mb.resultsChan <- batchResult{jobResult: jobResult, batchId: newBatchId}
+		mb.resultsChan <- batchResult[JR]{jobResult: jobResult, batchId: newBatchId}
 	}()
 }

@@ -7,8 +7,8 @@ import (
 	"github.com/felixsebastian/microbatch"
 )
 
-func scheduleLetterEvent(mb *microbatch.MicroBatcher, letter string, wait int) {
-	timer := time.NewTimer(time.Duration(wait) * time.Millisecond)
+func scheduleLetterEvent(mb *microbatch.MicroBatcher[LetterEvent, TotalResult], letter string, ms int) {
+	timer := time.NewTimer(time.Duration(ms) * time.Millisecond)
 
 	go func() {
 		<-timer.C
@@ -17,8 +17,8 @@ func scheduleLetterEvent(mb *microbatch.MicroBatcher, letter string, wait int) {
 	}()
 }
 
-func scheduleStop(mb *microbatch.MicroBatcher, wait int) {
-	timer := time.NewTimer(time.Duration(wait) * time.Millisecond)
+func scheduleStop(mb *microbatch.MicroBatcher[LetterEvent, TotalResult], ms int) {
+	timer := time.NewTimer(time.Duration(ms) * time.Millisecond)
 
 	go func() {
 		<-timer.C

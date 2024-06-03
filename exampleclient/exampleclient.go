@@ -19,7 +19,7 @@ type TotalResult struct {
 }
 
 func main() {
-	config := microbatch.Config{
+	config := microbatch.Config[LetterEvent, TotalResult]{
 		BatchProcessor:   LettersBatchProcessor{},
 		JobResultHandler: TotalResultHandler{},
 		BatchFrequency:   1000,

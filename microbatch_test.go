@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func waitForJobsToRun(mb *MicroBatcher) {
+func waitForJobsToRun[J any, JR any](mb *MicroBatcher[J, JR]) {
 	// We need to stop because this is the last opportunity before blocking
 	// indefinitely.
 	mb.Stop()
@@ -18,7 +18,7 @@ func TestSimpleBatch(t *testing.T) {
 	fakeBatchProcessor := NewFakeBatchProcessor()
 	fakeResultsHandler := NewFakeResultsHandler()
 
-	config := Config{
+	config := Config[int, string]{
 		BatchProcessor:   fakeBatchProcessor,
 		JobResultHandler: fakeResultsHandler,
 		BatchFrequency:   100,
@@ -46,7 +46,7 @@ func TestTimeCycles(t *testing.T) {
 	fakeBatchProcessor := NewFakeBatchProcessor()
 	fakeResultsHandler := NewFakeResultsHandler()
 
-	config := Config{
+	config := Config[int, string]{
 		BatchProcessor:   fakeBatchProcessor,
 		JobResultHandler: fakeResultsHandler,
 		BatchFrequency:   100,
@@ -75,7 +75,7 @@ func TestMaxSize(t *testing.T) {
 	fakeBatchProcessor := NewFakeBatchProcessor()
 	fakeResultsHandler := NewFakeResultsHandler()
 
-	config := Config{
+	config := Config[int, string]{
 		BatchProcessor:   fakeBatchProcessor,
 		JobResultHandler: fakeResultsHandler,
 		BatchFrequency:   100,
