@@ -1,18 +1,16 @@
 package microbatch
 
 import (
-	"fmt"
 	"time"
 )
 
 type FakeBatchProcessor struct {
 	calls [][]int
 	chans map[int]chan bool
-	slow  bool
 }
 
-func NewFakeBatchProcessor(slow bool) *FakeBatchProcessor {
-	return &FakeBatchProcessor{calls: make([][]int, 0), slow: slow}
+func NewFakeBatchProcessor() *FakeBatchProcessor {
+	return &FakeBatchProcessor{calls: make([][]int, 0)}
 }
 
 func (fbp *FakeBatchProcessor) TellJobToFinish(batchId int) {
@@ -28,21 +26,7 @@ func (fbp *FakeBatchProcessor) Run(jobs []Job, batchId int) JobResult {
 
 	fbp.calls = append(fbp.calls, batch)
 
-	if !fbp.slow {
-		return "some result"
-	}
-
-	for {
-		// fmt.Printf("checking batch %d\n", batchId)
-
-		select {
-		case <-fbp.chans[batchId]:
-			fmt.Printf("finishing job %d", batchId)
-			return "some result"
-		default:
-			// fmt.Println("not finishing job")
-		}
-	}
+	return "some result"
 }
 
 type FakeResultsHandler struct {
