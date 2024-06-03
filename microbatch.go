@@ -69,7 +69,7 @@ func (mb *MicroBatcher[E, R]) Stop() {
 }
 
 func (mb *MicroBatcher[E, R]) listen(ticker Ticker) {
-	tickerChannel := ticker.Start(mb.config.BatchFrequency)
+	tickerChannel := ticker.Start(mb.config.Frequency)
 
 	go func() {
 		for {

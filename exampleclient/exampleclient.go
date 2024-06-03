@@ -22,7 +22,7 @@ func main() {
 	config := microbatch.Config[LetterEvent, TotalResult]{
 		BatchProcessor: LettersBatchProcessor{},
 		ResultHandler:  TotalResultHandler{},
-		BatchFrequency: 1000,
+		Frequency:      1000,
 		MaxSize:        2,
 	}
 

@@ -18,6 +18,6 @@ type ResultHandler[R any] interface {
 type Config[E any, R any] struct {
 	BatchProcessor BatchProcessor[E, R]
 	ResultHandler  ResultHandler[R]
-	BatchFrequency int // usually millseconds
+	Frequency      int // usually millseconds
 	MaxSize        int
 }

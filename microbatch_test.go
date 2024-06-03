@@ -21,7 +21,7 @@ func TestSimpleBatch(t *testing.T) {
 	config := Config[int, string]{
 		BatchProcessor: fakeBatchProcessor,
 		ResultHandler:  fakeResultHandler,
-		BatchFrequency: 100,
+		Frequency:      100,
 		MaxSize:        10,
 	}
 
@@ -49,7 +49,7 @@ func TestTimeCycles(t *testing.T) {
 	config := Config[int, string]{
 		BatchProcessor: fakeBatchProcessor,
 		ResultHandler:  fakeResultHandler,
-		BatchFrequency: 100,
+		Frequency:      100,
 		MaxSize:        10,
 	}
 
@@ -78,7 +78,7 @@ func TestMaxSize(t *testing.T) {
 	config := Config[int, string]{
 		BatchProcessor: fakeBatchProcessor,
 		ResultHandler:  fakeResultHandler,
-		BatchFrequency: 100,
+		Frequency:      100,
 		MaxSize:        3,
 	}
 
