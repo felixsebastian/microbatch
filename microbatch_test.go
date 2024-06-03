@@ -27,9 +27,9 @@ func TestSimpleBatch(t *testing.T) {
 
 	simpleTicker := NewSimpleTicker()
 	mb := StartWithTicker(config, simpleTicker)
-	mb.SubmitJob(0)
-	mb.SubmitJob(1)
-	mb.SubmitJob(2)
+	mb.RecordEvent(0)
+	mb.RecordEvent(1)
+	mb.RecordEvent(2)
 	simpleTicker.Tick()
 	waitForJobsToRun(mb)
 
@@ -55,14 +55,14 @@ func TestTimeCycles(t *testing.T) {
 
 	simpleTicker := NewSimpleTicker()
 	mb := StartWithTicker(config, simpleTicker)
-	mb.SubmitJob(0)
-	mb.SubmitJob(1)
-	mb.SubmitJob(2)
+	mb.RecordEvent(0)
+	mb.RecordEvent(1)
+	mb.RecordEvent(2)
 	simpleTicker.Tick()
 	simpleTicker.Tick() // should not trigger an additional batch
-	mb.SubmitJob(0)
-	mb.SubmitJob(1)
-	mb.SubmitJob(2)
+	mb.RecordEvent(0)
+	mb.RecordEvent(1)
+	mb.RecordEvent(2)
 	simpleTicker.Tick()
 	waitForJobsToRun(mb)
 
@@ -84,13 +84,13 @@ func TestMaxSize(t *testing.T) {
 
 	simpleTicker := NewSimpleTicker()
 	mb := StartWithTicker(config, simpleTicker)
-	mb.SubmitJob(0)
-	mb.SubmitJob(1)
-	mb.SubmitJob(2)
-	mb.SubmitJob(3)
-	mb.SubmitJob(4)
-	mb.SubmitJob(5)
-	mb.SubmitJob(6)
+	mb.RecordEvent(0)
+	mb.RecordEvent(1)
+	mb.RecordEvent(2)
+	mb.RecordEvent(3)
+	mb.RecordEvent(4)
+	mb.RecordEvent(5)
+	mb.RecordEvent(6)
 	waitForJobsToRun(mb)
 
 	if len(fakeBatchProcessor.calls) != 3 {

@@ -42,8 +42,8 @@ func StartWithTicker[E any, R any](config Config[E, R], ticker Ticker) *MicroBat
 	return mb
 }
 
-// SubmitJob should be called to submit new Job objects to be batched.
-func (mb *MicroBatcher[E, R]) SubmitJob(event E) {
+// RecordEvent will submit a new event to be batched.
+func (mb *MicroBatcher[E, R]) RecordEvent(event E) {
 	mb.eventQueue.mu.Lock()
 	defer mb.eventQueue.mu.Unlock()
 	mb.eventQueue.slice = append(mb.eventQueue.slice, event)
@@ -62,7 +62,8 @@ func (mb *MicroBatcher[E, R]) WaitForResults() {
 	}
 }
 
-// Stop can be called if we want to stop listening for events.
+// Stop will trigger the stop sequence and stop listening for new events. Once
+// this is complete, WaitForResults() will unblock.
 func (mb *MicroBatcher[E, R]) Stop() {
 	mb.stopChan <- true // stop the timer
 }
