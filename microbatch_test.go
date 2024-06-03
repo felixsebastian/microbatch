@@ -3,7 +3,6 @@ package microbatch
 import (
 	"reflect"
 	"testing"
-	"time"
 )
 
 func TestSimpleBatch(t *testing.T) {
@@ -17,14 +16,14 @@ func TestSimpleBatch(t *testing.T) {
 		MaxSize:          10,
 	}
 
-	fakeTickerChan := make(chan time.Time)
-	mb := StartWithTickerFactory(config, func(_ int) Ticker { return NewFakeTicker(&fakeTickerChan) })
+	simpleTicker := NewSimpleTicker()
+	mb := StartWithTickerFactory(config, simpleTicker)
 
 	mb.SubmitJob(0)
 	mb.SubmitJob(1)
 	mb.SubmitJob(2)
 
-	fakeTickerChan <- time.Time{}
+	simpleTicker.Tick()
 
 	// We need to stop because this is the last opportunity before blocking
 	// indefinitely.
@@ -53,23 +52,23 @@ func TestTimeCycles(t *testing.T) {
 		MaxSize:          10,
 	}
 
-	fakeTickerChan := make(chan time.Time)
-	mb := StartWithTickerFactory(config, func(_ int) Ticker { return NewFakeTicker(&fakeTickerChan) })
+	simpleTicker := NewSimpleTicker()
+	mb := StartWithTickerFactory(config, simpleTicker)
 
 	mb.SubmitJob(0)
 	mb.SubmitJob(1)
 	mb.SubmitJob(2)
 
-	fakeTickerChan <- time.Time{}
+	simpleTicker.Tick()
 
-	// should not call the processor
-	fakeTickerChan <- time.Time{}
+	// should not trigger an empty batch
+	simpleTicker.Tick()
 
 	mb.SubmitJob(0)
 	mb.SubmitJob(1)
 	mb.SubmitJob(2)
 
-	fakeTickerChan <- time.Time{}
+	simpleTicker.Tick()
 
 	// We need to stop because this is the last opportunity before blocking
 	// indefinitely.
@@ -94,8 +93,8 @@ func TestMaxSize(t *testing.T) {
 		MaxSize:          3,
 	}
 
-	fakeTickerChan := make(chan time.Time)
-	mb := StartWithTickerFactory(config, func(_ int) Ticker { return NewFakeTicker(&fakeTickerChan) })
+	simpleTicker := NewSimpleTicker()
+	mb := StartWithTickerFactory(config, simpleTicker)
 
 	mb.SubmitJob(0)
 	mb.SubmitJob(1)

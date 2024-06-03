@@ -3,7 +3,6 @@ package microbatch
 
 import (
 	"sync"
-	"time"
 )
 
 type Job interface{}
@@ -46,21 +45,13 @@ type MicroBatcher struct {
 	wg          sync.WaitGroup
 }
 
-// Ticker is used to control timing of batches, defaults to time.NewTicker()
-type Ticker interface {
-	Stop()
-	GetChannel() <-chan time.Time
-}
-
-type TickerFactory func(frequency int) Ticker
-
 // Start will create a MicroBatcher and start listening for events.
 func Start(config Config) *MicroBatcher {
 	return StartWithTickerFactory(config, nil)
 }
 
 // StartWithTickerFactory allows the caller to provide a tickerFactory for controlling time
-func StartWithTickerFactory(config Config, tickerFactory TickerFactory) *MicroBatcher {
+func StartWithTickerFactory(config Config, ticker Ticker) *MicroBatcher {
 	mb := &MicroBatcher{
 		config:      config,
 		jobQueue:    jobQueue{},
@@ -68,11 +59,7 @@ func StartWithTickerFactory(config Config, tickerFactory TickerFactory) *MicroBa
 		resultsChan: make(chan batchResult),
 	}
 
-	if tickerFactory == nil {
-		tickerFactory = NewRealTimeTicker
-	}
-
-	mb.listen(tickerFactory)
+	mb.listen(ticker)
 	return mb
 }
 
@@ -100,9 +87,12 @@ func (mb *MicroBatcher) WaitForResults() {
 // Stop can be called if we want to stop listening for events.
 func (mb *MicroBatcher) Stop() { mb.stopChan <- true }
 
-func (mb *MicroBatcher) listen(tickerFactory TickerFactory) {
-	ticker := tickerFactory(mb.config.BatchFrequency)
-	tickerChannel := ticker.GetChannel()
+func (mb *MicroBatcher) listen(ticker Ticker) {
+	if ticker == nil {
+		ticker = NewRealTimeTicker()
+	}
+
+	tickerChannel := ticker.Start(mb.config.BatchFrequency)
 
 	go func() {
 		for {

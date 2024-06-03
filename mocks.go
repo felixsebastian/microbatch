@@ -1,9 +1,5 @@
 package microbatch
 
-import (
-	"time"
-)
-
 type FakeBatchProcessor struct {
 	calls [][]int
 	chans map[int]chan bool
@@ -39,18 +35,4 @@ func NewFakeResultsHandler() *FakeResultsHandler {
 
 func (frh *FakeResultsHandler) Run(jobResult JobResult, jobId int) {
 	frh.calls = append(frh.calls, jobResult.(string))
-}
-
-type fakeTicker struct{ tickerChan *chan time.Time }
-
-func NewFakeTicker(tickerChan *chan time.Time) Ticker {
-	return &fakeTicker{
-		tickerChan: tickerChan,
-	}
-}
-
-func (ft *fakeTicker) Stop() {}
-
-func (ft *fakeTicker) GetChannel() <-chan time.Time {
-	return *ft.tickerChan
 }
