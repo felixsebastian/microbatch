@@ -26,7 +26,7 @@ func TestSimpleBatch(t *testing.T) {
 	}
 
 	simpleTicker := NewSimpleTicker()
-	mb := StartWithTickerFactory(config, simpleTicker)
+	mb := StartWithTicker(config, simpleTicker)
 	mb.SubmitJob(0)
 	mb.SubmitJob(1)
 	mb.SubmitJob(2)
@@ -54,7 +54,7 @@ func TestTimeCycles(t *testing.T) {
 	}
 
 	simpleTicker := NewSimpleTicker()
-	mb := StartWithTickerFactory(config, simpleTicker)
+	mb := StartWithTicker(config, simpleTicker)
 	mb.SubmitJob(0)
 	mb.SubmitJob(1)
 	mb.SubmitJob(2)
@@ -83,7 +83,7 @@ func TestMaxSize(t *testing.T) {
 	}
 
 	simpleTicker := NewSimpleTicker()
-	mb := StartWithTickerFactory(config, simpleTicker)
+	mb := StartWithTicker(config, simpleTicker)
 	mb.SubmitJob(0)
 	mb.SubmitJob(1)
 	mb.SubmitJob(2)

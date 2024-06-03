@@ -28,11 +28,12 @@ type MicroBatcher struct {
 
 // Start will create a MicroBatcher and start listening for events.
 func Start(config Config) *MicroBatcher {
-	return StartWithTickerFactory(config, nil)
+	return StartWithTicker(config, nil)
 }
 
-// StartWithTickerFactory allows the caller to provide a tickerFactory for controlling time
-func StartWithTickerFactory(config Config, ticker Ticker) *MicroBatcher {
+// StartWithTicker allows the caller to provide a Ticker for controlling time.
+// Useful for testing.
+func StartWithTicker(config Config, ticker Ticker) *MicroBatcher {
 	mb := &MicroBatcher{
 		config:      config,
 		jobQueue:    jobQueue{},
@@ -48,7 +49,7 @@ func StartWithTickerFactory(config Config, ticker Ticker) *MicroBatcher {
 	return mb
 }
 
-// SubmitJob should be called to submit new jobs to be batched.
+// SubmitJob should be called to submit new Job objects to be batched.
 func (mb *MicroBatcher) SubmitJob(job Job) error {
 	mb.jobQueue.mu.Lock()
 	defer mb.jobQueue.mu.Unlock()
@@ -70,7 +71,10 @@ func (mb *MicroBatcher) WaitForResults() {
 }
 
 // Stop can be called if we want to stop listening for events.
-func (mb *MicroBatcher) Stop() { mb.stopChan <- true }
+func (mb *MicroBatcher) Stop() {
+	mb.stopChan <- true // stop the timer
+
+}
 
 func (mb *MicroBatcher) listen(ticker Ticker) {
 	tickerChannel := ticker.Start(mb.config.BatchFrequency)
@@ -83,16 +87,16 @@ func (mb *MicroBatcher) listen(ticker Ticker) {
 			case <-mb.stopChan:
 				ticker.Stop()         // stop the timer
 				mb.send()             // send remaining events
-				mb.wg.Wait()          // wait for events to finish processing
-				close(mb.stopChan)    // no longer needed
+				mb.wg.Wait()          // wait before closing the results channel
 				close(mb.resultsChan) // this will unblock WaitForResults()
+				close(mb.stopChan)    // no longer needed
 				return
 			}
 		}
 	}()
 }
 
-// sends all jobs currently in the queue to the batch processor.
+// will send all jobs currently in the queue to the batch processor.
 func (mb *MicroBatcher) send() {
 	mb.sendMu.Lock()
 	defer mb.sendMu.Unlock()
