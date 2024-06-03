@@ -1,32 +1,30 @@
 # Microbatch
 
-A simple go library for micro-batching event streams.
+A simple go library for micro-batching.
 
 ## What is microbatching anyway?
 
-Microbatching is a simple technique commonly used in **stream processing** pipelines to group events into small batches.
-
-A nice property of stream processing is that events are processed in real-time. The problem is, it can become too expensive to process every job individually. Grouping jobs into small batches maintains the real-time properties of stream processing, but reduces some of the overhead.
+Microbatching is a simple technique commonly used in **stream processing** pipelines to group events into small batches to reduce overhead of processing events individually. It can also be used to batch tasks like network calls or writes to disk. There are good examples of microbatching in the GraphQL ecosystem with tools like dataloader.
 
 ## Using this library
 
 To start microbatching, first start the batcher with the necessary config object. This includes a `BatchProcessor` and `ResultHandler` which need to be defined.
 
 ```
-type jobsProcessor struct{}
-type jobResultHandler struct{}
+type batchProcessor struct{}
+type resultHandler struct{}
 
-func (jobsProcessor) Run(batch []Job) JobResult {
+func (batchProcessor) Run(batch []Job) JobResult {
   // domain specific logic
 }
 
-func (jobResultHandler) Run(result JobResult) {
+func (resultHandler) Run(result JobResult) {
   // domain specific logic
 }
 
 config := microbatcher.Config[Job, JobResult]{
-  BatchProcessor: jobsProcessor{},    // for processing each batch
-  ResultHandler:  jobResultHandler{}, // for processing each batch result
+  BatchProcessor: batchProcessor{},   // for processing each batch
+  ResultHandler:  resultHandler{},    // for processing each batch result
   Frequency:      1000,               // number of milliseconds between each batch
   MaxSize:        30,                 // if this limit is reached, we'll batch early
 }
@@ -36,7 +34,7 @@ mb := microbatcher.Start(config)
 
 Then, start recording jobs with `mb.SubmitJob(job)`. jobs are domain specific, called `Job` in this example but can be of any type.
 
-Finally, call `mb.WaitForResults()` to wait for results to come back. `ResultHandler` will be called with the results of each batch, in this case `JobResult`.
+Finally, call `mb.WaitForResults()` to wait for results to come back. `ResultHandler` will be called with the results of each batch.
 
 `BatchProcessor` will be run in a new goroutine for each batch. The `ResultHandler` is run from whatever thread `mb.WaitForResults()` is called from, so should be a safe place to pass data back to your application.
 
