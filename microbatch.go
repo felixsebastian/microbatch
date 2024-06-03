@@ -59,6 +59,10 @@ func StartWithTickerFactory(config Config, ticker Ticker) *MicroBatcher {
 		resultsChan: make(chan batchResult),
 	}
 
+	if ticker == nil {
+		ticker = NewRealTimeTicker()
+	}
+
 	mb.listen(ticker)
 	return mb
 }
@@ -88,10 +92,6 @@ func (mb *MicroBatcher) WaitForResults() {
 func (mb *MicroBatcher) Stop() { mb.stopChan <- true }
 
 func (mb *MicroBatcher) listen(ticker Ticker) {
-	if ticker == nil {
-		ticker = NewRealTimeTicker()
-	}
-
 	tickerChannel := ticker.Start(mb.config.BatchFrequency)
 
 	go func() {
@@ -100,6 +100,7 @@ func (mb *MicroBatcher) listen(ticker Ticker) {
 			case <-tickerChannel:
 				mb.send()
 			case <-mb.stopChan:
+				ticker.Stop()         // stop the timer
 				mb.send()             // send remaining events
 				mb.wg.Wait()          // wait for events to finish processing
 				close(mb.stopChan)    // no longer needed
@@ -108,8 +109,6 @@ func (mb *MicroBatcher) listen(ticker Ticker) {
 			}
 		}
 	}()
-
-	ticker.Stop()
 }
 
 // sends all jobs currently in the queue to the batch processor.
@@ -132,15 +131,4 @@ func (mb *MicroBatcher) send() {
 		jobResult := mb.config.BatchProcessor.Run(batch, newBatchId)
 		mb.resultsChan <- batchResult{jobResult: jobResult, batchId: newBatchId}
 	}()
-}
-
-func (mb *MicroBatcher) WaitForJob(batchId int) {
-	finishedJobs := map[int]bool{}
-	var finished bool
-
-	for !finished {
-		result := <-mb.resultsChan
-		finishedJobs[result.batchId] = true
-		_, finished = finishedJobs[batchId]
-	}
 }
