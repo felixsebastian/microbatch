@@ -14,7 +14,7 @@ type ResultHandler[R any] interface {
 	Run(result R)
 }
 
-// Config is required to call Start(), to start the MicroBatcher.
+// Config is a required param of Start(), which starts the MicroBatcher.
 type Config[J any, R any] struct {
 	BatchProcessor BatchProcessor[J, R]
 	ResultHandler  ResultHandler[R]

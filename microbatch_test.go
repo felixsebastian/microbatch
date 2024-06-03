@@ -34,11 +34,11 @@ func TestSimpleBatch(t *testing.T) {
 	waitForJobsToRun(mb)
 
 	if !reflect.DeepEqual(fakeBatchProcessor.calls[0], []int{0, 1, 2}) {
-		t.Fatalf("Batch should contain the input data")
+		t.Fatalf("should have called fakeBatchProcessor with all input data")
 	}
 
 	if fakeResultHandler.calls[0] != "some result" {
-		t.Fatalf("Should have called myResultHandler with result")
+		t.Fatalf("should have called fakeResultHandler with result")
 	}
 }
 
@@ -67,7 +67,7 @@ func TestTimeCycles(t *testing.T) {
 	waitForJobsToRun(mb)
 
 	if len(fakeBatchProcessor.calls) != 2 {
-		t.Fatalf("Should have 2 batches")
+		t.Fatalf("should have created 2 batches")
 	}
 }
 
@@ -94,6 +94,6 @@ func TestMaxSize(t *testing.T) {
 	waitForJobsToRun(mb)
 
 	if len(fakeBatchProcessor.calls) != 3 {
-		t.Fatalf("Should have hit the maxSize limit twice and batched the remaining job")
+		t.Fatalf("should have hit the maxSize limit twice and batched the remaining job")
 	}
 }
