@@ -1,4 +1,4 @@
-module example.com/example-client
+module example.com/exampleclient
 
 go 1.22.3
 

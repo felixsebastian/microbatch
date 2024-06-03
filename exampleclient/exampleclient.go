@@ -21,9 +21,9 @@ type TotalResult struct {
 
 func main() {
 	config := microbatch.Config{
-		BatchProcessor:   letterBatchProcessor,
-		JobResultHandler: totalResultHandler,
-		BatchFrequency:   time.Second,
+		BatchProcessor:   lettersBatchProcessor{},
+		JobResultHandler: totalResultHandler{},
+		BatchFrequency:   1000,
 		MaxSize:          2,
 	}
 
@@ -31,17 +31,17 @@ func main() {
 	fmt.Println("Listening for events...")
 
 	// schedule some random events
-	scheduleLetterEvent(mb, "a", 1100*time.Millisecond)
-	scheduleLetterEvent(mb, "b", 1200*time.Millisecond)
-	scheduleLetterEvent(mb, "d", 1300*time.Millisecond)
-	scheduleLetterEvent(mb, "a", 2100*time.Millisecond)
-	scheduleLetterEvent(mb, "b", 2200*time.Millisecond)
-	scheduleLetterEvent(mb, "c", 2300*time.Millisecond)
-	scheduleLetterEvent(mb, "d", 2400*time.Millisecond)
-	scheduleLetterEvent(mb, "a", 4900*time.Millisecond)
+	scheduleLetterEvent(mb, "a", 1100)
+	scheduleLetterEvent(mb, "b", 1200)
+	scheduleLetterEvent(mb, "d", 1300)
+	scheduleLetterEvent(mb, "a", 2100)
+	scheduleLetterEvent(mb, "b", 2200)
+	scheduleLetterEvent(mb, "c", 2300)
+	scheduleLetterEvent(mb, "d", 2400)
+	scheduleLetterEvent(mb, "a", 4900)
 
 	// stop batching after 5 seconds
-	scheduleStopEvent(mb, 5000*time.Millisecond)
+	scheduleStop(mb, 5000)
 
 	go func() {
 		signalChan := make(chan os.Signal, 1)
@@ -54,7 +54,9 @@ func main() {
 	mb.WaitForResults()
 }
 
-func letterBatchProcessor(batch []microbatch.Job) microbatch.JobResult {
+type lettersBatchProcessor struct{}
+
+func (lettersBatchProcessor) Run(batch []microbatch.Job, _ int) microbatch.JobResult {
 	mappings := map[string]int{"a": 1, "b": 2, "d": 4}
 	var sum int
 
@@ -75,7 +77,9 @@ func letterBatchProcessor(batch []microbatch.Job) microbatch.JobResult {
 	return TotalResult{total: sum}
 }
 
-func totalResultHandler(result microbatch.JobResult) {
+type totalResultHandler struct{}
+
+func (totalResultHandler) Run(result microbatch.JobResult, _ int) {
 	totalResult := result.(TotalResult)
 
 	if totalResult.err != nil {
@@ -85,8 +89,8 @@ func totalResultHandler(result microbatch.JobResult) {
 	}
 }
 
-func scheduleLetterEvent(mb *microbatch.MicroBatcher, letter string, wait time.Duration) {
-	timer := time.NewTimer(wait)
+func scheduleLetterEvent(mb *microbatch.MicroBatcher, letter string, wait int) {
+	timer := time.NewTimer(time.Duration(wait) * time.Millisecond)
 
 	go func() {
 		<-timer.C
@@ -95,8 +99,8 @@ func scheduleLetterEvent(mb *microbatch.MicroBatcher, letter string, wait time.D
 	}()
 }
 
-func scheduleStopEvent(mb *microbatch.MicroBatcher, wait time.Duration) {
-	timer := time.NewTimer(wait)
+func scheduleStop(mb *microbatch.MicroBatcher, wait int) {
+	timer := time.NewTimer(time.Duration(wait) * time.Millisecond)
 
 	go func() {
 		<-timer.C

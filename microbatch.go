@@ -8,14 +8,20 @@ import (
 
 type Job interface{}
 type JobResult interface{}
-type batchProcessor func(job []Job) JobResult
-type jobResultHandler func(jobResult JobResult)
+
+type BatchProcessor interface {
+	Run(batch []Job, batchId int) JobResult
+}
+
+type JobResultHandler interface {
+	Run(jobResult JobResult, batchId int)
+}
 
 // Config is necessary to start microbatching.
 type Config struct {
-	BatchProcessor   batchProcessor
-	JobResultHandler jobResultHandler
-	BatchFrequency   time.Duration
+	BatchProcessor   BatchProcessor
+	JobResultHandler JobResultHandler
+	BatchFrequency   int // usually millseconds
 	MaxSize          int
 }
 
@@ -24,25 +30,49 @@ type jobQueue struct {
 	mu   sync.Mutex
 }
 
+type batchResult struct {
+	batchId   int
+	jobResult JobResult
+}
+
 // MicroBatcher is the object that manages microbatching of an event stream.
 type MicroBatcher struct {
 	config      Config
 	jobQueue    jobQueue
 	stopChan    chan bool
-	resultsChan chan JobResult
+	resultsChan chan batchResult
+	lastBatchId int
+	sendMu      sync.Mutex
 	wg          sync.WaitGroup
 }
 
+// Ticker is used to control timing of batches, defaults to time.NewTicker()
+type Ticker interface {
+	Stop()
+	GetChannel() <-chan time.Time
+}
+
+type TickerFactory func(frequency int) Ticker
+
 // Start will create a MicroBatcher and start listening for events.
 func Start(config Config) *MicroBatcher {
+	return StartWithTickerFactory(config, nil)
+}
+
+// StartWithTickerFactory allows the caller to provide a tickerFactory for controlling time
+func StartWithTickerFactory(config Config, tickerFactory TickerFactory) *MicroBatcher {
 	mb := &MicroBatcher{
 		config:      config,
 		jobQueue:    jobQueue{},
 		stopChan:    make(chan bool),
-		resultsChan: make(chan JobResult),
+		resultsChan: make(chan batchResult),
 	}
 
-	go mb.listen()
+	if tickerFactory == nil {
+		tickerFactory = NewRealTimeTicker
+	}
+
+	mb.listen(tickerFactory)
 	return mb
 }
 
@@ -62,43 +92,65 @@ func (mb *MicroBatcher) SubmitJob(job Job) error {
 // WaitForResults should be called to send results to the JobResultHandler.
 // This will block until Stop() is called.
 func (mb *MicroBatcher) WaitForResults() {
-	for result := range mb.resultsChan {
-		mb.config.JobResultHandler(result)
+	for batchResult := range mb.resultsChan {
+		mb.config.JobResultHandler.Run(batchResult.jobResult, batchResult.batchId)
 	}
 }
 
 // Stop can be called if we want to stop listening for events.
 func (mb *MicroBatcher) Stop() { mb.stopChan <- true }
 
-func (mb *MicroBatcher) listen() {
-	ticker := time.NewTicker(mb.config.BatchFrequency)
+func (mb *MicroBatcher) listen(tickerFactory TickerFactory) {
+	ticker := tickerFactory(mb.config.BatchFrequency)
+	tickerChannel := ticker.GetChannel()
 
-	for {
-		select {
-		case <-ticker.C:
-			mb.send()
-		case <-mb.stopChan:
-			mb.send()             // send remaining events
-			mb.wg.Wait()          // wait for events to finish processing
-			close(mb.stopChan)    // no longer needed
-			close(mb.resultsChan) // this will unblock WaitForResults()
-			return
+	go func() {
+		for {
+			select {
+			case <-tickerChannel:
+				mb.send()
+			case <-mb.stopChan:
+				mb.send()             // send remaining events
+				mb.wg.Wait()          // wait for events to finish processing
+				close(mb.stopChan)    // no longer needed
+				close(mb.resultsChan) // this will unblock WaitForResults()
+				return
+			}
 		}
-	}
+	}()
+
+	ticker.Stop()
 }
 
 // sends all jobs currently in the queue to the batch processor.
 func (mb *MicroBatcher) send() {
+	mb.sendMu.Lock()
+	defer mb.sendMu.Unlock()
+
 	if len(mb.jobQueue.jobs) == 0 {
 		return
 	}
 
 	batch := mb.jobQueue.jobs
 	mb.jobQueue.jobs = make([]Job, 0)
+	newBatchId := mb.lastBatchId + 1
+	mb.lastBatchId = newBatchId
 	mb.wg.Add(1)
 
 	go func() {
 		defer mb.wg.Done()
-		mb.resultsChan <- mb.config.BatchProcessor(batch)
+		jobResult := mb.config.BatchProcessor.Run(batch, newBatchId)
+		mb.resultsChan <- batchResult{jobResult: jobResult, batchId: newBatchId}
 	}()
+}
+
+func (mb *MicroBatcher) WaitForJob(batchId int) {
+	finishedJobs := map[int]bool{}
+	var finished bool
+
+	for !finished {
+		result := <-mb.resultsChan
+		finishedJobs[result.batchId] = true
+		_, finished = finishedJobs[batchId]
+	}
 }
