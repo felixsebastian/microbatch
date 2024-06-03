@@ -7,7 +7,7 @@ import (
 
 type LettersBatchProcessor struct{}
 
-func (LettersBatchProcessor) Run(batch []LetterEvent, _ int) TotalResult {
+func (LettersBatchProcessor) Run(batch []LetterEvent) TotalResult {
 	mappings := map[string]int{"a": 1, "b": 2, "d": 4}
 	var sum int
 

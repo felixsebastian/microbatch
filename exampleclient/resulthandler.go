@@ -6,10 +6,10 @@ import (
 
 type TotalResultHandler struct{}
 
-func (TotalResultHandler) Run(totalResult TotalResult, batchId int) {
+func (TotalResultHandler) Run(totalResult TotalResult) {
 	if totalResult.err != nil {
-		fmt.Printf("Batch %d failed with error: %s\n", batchId, totalResult.err)
+		fmt.Printf("Batch failed with error: %s\n", totalResult.err)
 	} else {
-		fmt.Printf("Batch %d total was %d\n", batchId, totalResult.total)
+		fmt.Printf("Batch total was %d\n", totalResult.total)
 	}
 }
