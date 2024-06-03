@@ -18,10 +18,10 @@ The API for this library is simple. First start the batcher with a config object
 
 ```
 config := microbatcher.Config{
-  BatchProcessor:   someFunc,    // some function to process each batch
-  ResultHandler: someFunc,    // some function to process batch result
-  BatchFrequency:   time.Second, // we'll send events to BatchProcessor at this interval
-  MaxSize:          30,          // if this limit is reached, we'll send early
+  BatchProcessor: someFunc,    // some function to process each batch
+  ResultHandler:  someFunc,    // some function to process batch result
+  BatchFrequency: time.Second, // we'll send events to BatchProcessor at this interval
+  MaxSize:        30,          // if this limit is reached, we'll send early
 }
 
 mb := microbatcher.Start(config)
