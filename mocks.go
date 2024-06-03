@@ -21,13 +21,10 @@ func (fbp *FakeBatchProcessor) Run(jobs []Job, batchId int) JobResult {
 	}
 
 	fbp.calls = append(fbp.calls, batch)
-
 	return "some result"
 }
 
-type FakeResultsHandler struct {
-	calls []string
-}
+type FakeResultsHandler struct{ calls []string }
 
 func NewFakeResultsHandler() *FakeResultsHandler {
 	return &FakeResultsHandler{calls: make([]string, 0)}
