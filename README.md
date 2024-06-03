@@ -14,12 +14,12 @@ This library is designed for such use cases where batches of events are processe
 
 ## API
 
-The API for this library is simple. First start the batcher with a config object. Then, send events to `mb` with `mb.SubmitJob(someEvent)`. Events are domain specific. Finally, call `mb.WaitForResults()` to wait for results to come back. `JobResultHandler` will be called with the results of each batch.
+The API for this library is simple. First start the batcher with a config object. Then, send events to `mb` with `mb.SubmitJob(someEvent)`. Events are domain specific. Finally, call `mb.WaitForResults()` to wait for results to come back. `ResultHandler` will be called with the results of each batch.
 
 ```
 config := microbatcher.Config{
   BatchProcessor:   someFunc,    // some function to process each batch
-  JobResultHandler: someFunc,    // some function to process batch result
+  ResultHandler: someFunc,    // some function to process batch result
   BatchFrequency:   time.Second, // we'll send events to BatchProcessor at this interval
   MaxSize:          30,          // if this limit is reached, we'll send early
 }
@@ -32,7 +32,7 @@ mb.SubmitJob(someEvent)
 mb.WaitForResults()
 ```
 
-`BatchProcessor` will be run in its own thread. The `JobResultHandler` is run from whatever thread `mb.WaitForResults()` is called from, so should be a safe place to pass data back to your application.
+`BatchProcessor` will be run in its own thread. The `ResultHandler` is run from whatever thread `mb.WaitForResults()` is called from, so should be a safe place to pass data back to your application.
 
 ## How does it work?
 

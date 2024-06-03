@@ -18,12 +18,12 @@ func (fbp *FakeBatchProcessor) Run(batch []int, batchId int) string {
 	return "some result"
 }
 
-type FakeResultsHandler struct{ calls []string }
+type FakeResultHandler struct{ calls []string }
 
-func NewFakeResultsHandler() *FakeResultsHandler {
-	return &FakeResultsHandler{calls: make([]string, 0)}
+func NewFakeResultHandler() *FakeResultHandler {
+	return &FakeResultHandler{calls: make([]string, 0)}
 }
 
-func (frh *FakeResultsHandler) Run(result string, jobId int) {
+func (frh *FakeResultHandler) Run(result string, eventId int) {
 	frh.calls = append(frh.calls, result)
 }

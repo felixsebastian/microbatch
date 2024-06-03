@@ -8,26 +8,29 @@ type Ticker interface {
 	Stop()
 }
 
-type realTimeTicker struct{ systemTicker time.Ticker }
+// RealTimeTicker uses the system clock, and will tick every n milliseconds.
+// This is usually what we want!
+type RealTimeTicker struct{ systemTicker time.Ticker }
 
-func NewRealTimeTicker() Ticker { return &realTimeTicker{} }
+func NewRealTimeTicker() Ticker { return &RealTimeTicker{} }
 
-func (rtt *realTimeTicker) Start(frequency int) <-chan time.Time {
+func (rtt *RealTimeTicker) Start(frequency int) <-chan time.Time {
 	rtt.systemTicker = *time.NewTicker(time.Duration(frequency) * time.Millisecond)
 	return rtt.systemTicker.C
 }
 
-func (rtt *realTimeTicker) Stop() { rtt.systemTicker.Stop() }
+func (rtt *RealTimeTicker) Stop() { rtt.systemTicker.Stop() }
 
-type simpleTicker struct{ tickerChan chan time.Time }
+// SimpleTicker only ticks when we call the Tick() method. For testing purposes.
+type SimpleTicker struct{ tickerChan chan time.Time }
 
-func NewSimpleTicker() *simpleTicker {
-	return &simpleTicker{tickerChan: make(chan time.Time)}
+func NewSimpleTicker() *SimpleTicker {
+	return &SimpleTicker{tickerChan: make(chan time.Time)}
 }
 
-func (ft *simpleTicker) Start(_ int) <-chan time.Time {
+func (ft *SimpleTicker) Start(_ int) <-chan time.Time {
 	return ft.tickerChan
 }
 
-func (ft *simpleTicker) Stop() {}
-func (ft *simpleTicker) Tick() { ft.tickerChan <- time.Time{} }
+func (ft *SimpleTicker) Stop() {}
+func (ft *SimpleTicker) Tick() { ft.tickerChan <- time.Time{} }

@@ -3,21 +3,21 @@ package microbatch
 // BatchProcessor needs to be implemented, this will be called with each batch
 // of events. Each batch will be called from it's own goroutine, so be careful
 // when sharing state with BatchProcessor.
-type BatchProcessor[J any, JR any] interface {
-	Run(batch []J, batchId int) JR
+type BatchProcessor[E any, R any] interface {
+	Run(batch []E, batchId int) R
 }
 
-// JobResultHandler will be called after each batch is done processing. This is
+// ResultHandler will be called after each batch is done processing. This is
 // called from the same goroutine as WaitForResults(). Use this if you don't
 // want to think too much about parallelism.
-type JobResultHandler[JR any] interface {
-	Run(jobResult JR, batchId int)
+type ResultHandler[R any] interface {
+	Run(result R, batchId int)
 }
 
 // Config is required to call Start(), to start the MicroBatcher.
-type Config[J any, JR any] struct {
-	BatchProcessor   BatchProcessor[J, JR]
-	JobResultHandler JobResultHandler[JR]
-	BatchFrequency   int // usually millseconds
-	MaxSize          int
+type Config[E any, R any] struct {
+	BatchProcessor BatchProcessor[E, R]
+	ResultHandler  ResultHandler[R]
+	BatchFrequency int // usually millseconds
+	MaxSize        int
 }

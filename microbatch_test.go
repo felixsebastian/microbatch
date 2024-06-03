@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func waitForJobsToRun[J any, JR any](mb *MicroBatcher[J, JR]) {
+func waitForJobsToRun[E any, R any](mb *MicroBatcher[E, R]) {
 	// We need to stop because this is the last opportunity before blocking
 	// indefinitely.
 	mb.Stop()
@@ -16,13 +16,13 @@ func waitForJobsToRun[J any, JR any](mb *MicroBatcher[J, JR]) {
 
 func TestSimpleBatch(t *testing.T) {
 	fakeBatchProcessor := NewFakeBatchProcessor()
-	fakeResultsHandler := NewFakeResultsHandler()
+	fakeResultHandler := NewFakeResultHandler()
 
 	config := Config[int, string]{
-		BatchProcessor:   fakeBatchProcessor,
-		JobResultHandler: fakeResultsHandler,
-		BatchFrequency:   100,
-		MaxSize:          10,
+		BatchProcessor: fakeBatchProcessor,
+		ResultHandler:  fakeResultHandler,
+		BatchFrequency: 100,
+		MaxSize:        10,
 	}
 
 	simpleTicker := NewSimpleTicker()
@@ -37,20 +37,20 @@ func TestSimpleBatch(t *testing.T) {
 		t.Fatalf("Batch should contain the input data")
 	}
 
-	if fakeResultsHandler.calls[0] != "some result" {
-		t.Fatalf("Should have called myJobResultHandler with result")
+	if fakeResultHandler.calls[0] != "some result" {
+		t.Fatalf("Should have called myResultHandler with result")
 	}
 }
 
 func TestTimeCycles(t *testing.T) {
 	fakeBatchProcessor := NewFakeBatchProcessor()
-	fakeResultsHandler := NewFakeResultsHandler()
+	fakeResultHandler := NewFakeResultHandler()
 
 	config := Config[int, string]{
-		BatchProcessor:   fakeBatchProcessor,
-		JobResultHandler: fakeResultsHandler,
-		BatchFrequency:   100,
-		MaxSize:          10,
+		BatchProcessor: fakeBatchProcessor,
+		ResultHandler:  fakeResultHandler,
+		BatchFrequency: 100,
+		MaxSize:        10,
 	}
 
 	simpleTicker := NewSimpleTicker()
@@ -73,13 +73,13 @@ func TestTimeCycles(t *testing.T) {
 
 func TestMaxSize(t *testing.T) {
 	fakeBatchProcessor := NewFakeBatchProcessor()
-	fakeResultsHandler := NewFakeResultsHandler()
+	fakeResultHandler := NewFakeResultHandler()
 
 	config := Config[int, string]{
-		BatchProcessor:   fakeBatchProcessor,
-		JobResultHandler: fakeResultsHandler,
-		BatchFrequency:   100,
-		MaxSize:          3,
+		BatchProcessor: fakeBatchProcessor,
+		ResultHandler:  fakeResultHandler,
+		BatchFrequency: 100,
+		MaxSize:        3,
 	}
 
 	simpleTicker := NewSimpleTicker()
@@ -94,6 +94,6 @@ func TestMaxSize(t *testing.T) {
 	waitForJobsToRun(mb)
 
 	if len(fakeBatchProcessor.calls) != 3 {
-		t.Fatalf("Should have hit the maxSize limit twice and batched the remaining job")
+		t.Fatalf("Should have hit the maxSize limit twice and batched the remaining event")
 	}
 }
