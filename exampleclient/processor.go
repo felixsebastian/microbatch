@@ -21,7 +21,7 @@ func (LettersBatchProcessor) Run(batch []LetterEvent) TotalResult {
 		sum = sum + number
 	}
 
-	// in the real world we might need to wait for networks, disks etc
+	// In the real world we might need to wait for networks, disks etc.
 	time.Sleep(500)
 
 	return TotalResult{total: sum}

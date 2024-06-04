@@ -6,8 +6,7 @@ import (
 )
 
 func waitForJobsToRun[J any, R any](mb *MicroBatcher[J, R]) {
-	// We need to stop because this is the last opportunity before blocking
-	// indefinitely.
+	// We need to stop because this is the last opportunity before blocking indefinitely.
 	mb.Stop()
 
 	// We need to wait to make sure everything has processed before testing.

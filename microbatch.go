@@ -62,8 +62,8 @@ func (mb *MicroBatcher[J, R]) WaitForResults() {
 	}
 }
 
-// Stop will trigger the stop sequence and stop listening for new jobs. Once
-// this is complete, WaitForResults() will unblock.
+// Stop will trigger the stop sequence and stop listening for new jobs.
+// Once this is complete, WaitForResults() will unblock.
 func (mb *MicroBatcher[J, R]) Stop() {
 	mb.stopChan <- true // stop the timer
 }
@@ -88,7 +88,7 @@ func (mb *MicroBatcher[J, R]) listen(ticker Ticker) {
 	}()
 }
 
-// will send all jobs currently in the queue to the batch processor.
+// Sends all jobs currently in the queue to the batch processor.
 func (mb *MicroBatcher[J, R]) send(lock bool) {
 	if lock {
 		mb.jobQueue.mu.Lock()
